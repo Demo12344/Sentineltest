@@ -24,7 +24,7 @@ resource "aws_iam_policy" "policy" {
           "s3:GetBucketLogging"
           ]
         Effect   = "Allow"
-        Resource = "${aws_s3_bucket.source.arn}"
+        Resource = "aws_s3_bucket.source.arn"
        },
     ]
   })
