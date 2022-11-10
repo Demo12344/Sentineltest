@@ -2,14 +2,38 @@ provider "aws" {
   region = "us-east-1"
 }
 
-resource "aws_servicecatalog_portfolio" "portfolio" {
-  name          = "My App Portfolio"
-  description   = "List of my organizations apps"
-  provider_name = "gadha"
+provider "aws" {
+  region =var.aws_region
+}
+provider "archive" {}
+data "archive_file" "zip" {
+  type        = "zip"
+  source_file = "welcome.py"
+  output_path = "welcome.zip"
 }
 
-resource "aws_servicecatalog_portfolio_share" "example" {
-  principal_id = "390132021439"
-  portfolio_id = aws_servicecatalog_portfolio.portfolio.id
-  type         = "ACCOUNT"
+data "aws_iam_policy_document" "policy" {
+  statement {
+    sid    = ""
+    effect = "Allow"
+    principals {
+      identifiers = ["lambda.amazonaws.com"]
+      type        = "Service"
+    }
+    actions = ["lambda:InvokeFunction"]
+  }
+}
+
+resource "aws_iam_role" "iam_for_lambda" {
+  name               = "iam_for_lambda"
+  assume_role_policy = data.aws_iam_policy_document.policy.json
+}
+
+resource "aws_lambda_function" "lambda" {
+  function_name = "welcome"
+  filename         = data.archive_file.zip.output_path
+  source_code_hash = data.archive_file.zip.output_base64sha256
+  role    = aws_iam_role.iam_for_lambda.arn
+  handler = "welcome.lambda_handler"
+  runtime = "python3.6"
 }
